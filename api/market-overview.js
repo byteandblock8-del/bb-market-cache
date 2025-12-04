@@ -29,10 +29,24 @@ async function fetchFromCoinGecko() {
 
   const trending = (trendingJson.coins || []).map((c) => ({ id: c.item.id }));
 
+  // ⭐⭐⭐ NEW BLOCK ADDED HERE ⭐⭐⭐
+  const top50Ids = markets.slice(0, 50).map((c) => c.id).join(",");
+  const simpleRes = await fetch(
+    "https://api.coingecko.com/api/v3/simple/price" +
+      "?ids=" + encodeURIComponent(top50Ids) +
+      "&vs_currencies=usd,eur,gbp"
+  );
+  if (!simpleRes.ok) throw new Error("simple price request failed");
+  const converterPrices = await simpleRes.json();
+  // ⭐⭐⭐ END OF NEW BLOCK ⭐⭐⭐
+
   return {
     markets,
     trending,
     global,
+
+    // ⭐⭐⭐ NEW RETURN FIELD ⭐⭐⭐
+    converterPrices
   };
 }
 
