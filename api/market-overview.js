@@ -144,6 +144,35 @@ function computeMood(markets, globalJson) {
   };
 }
 
+function computeAdjacentStates(state) {
+  const states = [
+    "crumbs-everywhere",
+    "clutching-cookies",
+    "side-eye",
+    "steady-bite",
+    "snack-mode",
+  ];
+
+  const i = states.indexOf(state);
+  if (i === -1) return { prev: null, next: null };
+
+  return {
+    prev: states[i - 1] ?? null,
+    next: states[i + 1] ?? null,
+  };
+}
+
+function buildCoinsRowFromTop3(top3Snapshot) {
+  return (top3Snapshot || []).map((c) => ({
+    id: c.id,
+    symbol: String(c.symbol || "").toUpperCase(),
+    name: c.name,
+    priceUsd: c.priceUsd,
+    chg24h: c.change24hPct,
+    chg30d: c.change30dPct,
+  }));
+}
+
 async function fetchFromCoinGecko() {
   const [marketsRes, trendingRes, globalRes] = await Promise.all([
     fetch(
@@ -178,7 +207,19 @@ async function fetchFromCoinGecko() {
 
   // Additive-only fields (won't break existing consumers)
   const top3Snapshot = computeTop3Snapshot(markets);
-  const mood = computeMood(markets, global);
+  const baseMood = computeMood(markets, global);
+
+  // NEW: adjacent states + ghostKey (static image mapping happens in WP)
+  const adjacent = computeAdjacentStates(baseMood.state);
+
+  const mood = {
+    ...baseMood,
+    adjacent,                // { prev, next }
+    ghostKey: baseMood.state // e.g. "crumbs-everywhere"
+  };
+
+  // NEW: compact coin row (BTC/ETH/SOL) with 24h + 30d
+  const coins = buildCoinsRowFromTop3(top3Snapshot);
 
   return {
     markets,
@@ -188,9 +229,10 @@ async function fetchFromCoinGecko() {
     // existing field
     converterPrices,
 
-    // new fields
+    // new fields (safe to add)
     mood,
     top3Snapshot,
+    coins, // ✅ ADD THIS
   };
 }
 
