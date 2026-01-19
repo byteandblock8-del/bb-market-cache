@@ -79,7 +79,8 @@ function computeMood(markets, globalJson) {
     .map((c) => c.price_change_percentage_30d_in_currency);
 
   const medianAlt30d = median(alt30dValues);
-  const leadershipGap30d = btc30d !== null && medianAlt30d !== null ? btc30d - medianAlt30d : null;
+  const leadershipGap30d =
+    btc30d !== null && medianAlt30d !== null ? btc30d - medianAlt30d : null;
 
   // Global market-cap 24h change (CoinGecko global endpoint)
   // CoinGecko returns: { data: { market_cap_change_percentage_24h_usd: ... } }
@@ -94,7 +95,7 @@ function computeMood(markets, globalJson) {
   let score = 50;
 
   score += (pctUp24h - 0.5) * 40; // +/-20
-  score += (pctUp7d - 0.5) * 40;  // +/-20
+  score += (pctUp7d - 0.5) * 40; // +/-20
 
   if (leadershipGap30d !== null) {
     // If BTC is outperforming alts by a lot, it's often a "risk-off / narrow market" vibe
@@ -164,18 +165,18 @@ async function fetchFromCoinGecko() {
 
   const trending = (trendingJson.coins || []).map((c) => ({ id: c.item.id }));
 
-  // ⭐⭐⭐ NEW BLOCK ADDED HERE ⭐⭐⭐
+  // Converter prices (top 50 IDs)
   const top50Ids = markets.slice(0, 50).map((c) => c.id).join(",");
   const simpleRes = await fetch(
     "https://api.coingecko.com/api/v3/simple/price" +
-      "?ids=" + encodeURIComponent(top50Ids) +
+      "?ids=" +
+      encodeURIComponent(top50Ids) +
       "&vs_currencies=usd,eur,gbp"
   );
   if (!simpleRes.ok) throw new Error("simple price request failed");
   const converterPrices = await simpleRes.json();
-  // ⭐⭐⭐ END OF NEW BLOCK ⭐⭐⭐
 
-  // ✅ Added: compact top 3 + mood (additive only; does not affect existing consumers)
+  // Additive-only fields (won't break existing consumers)
   const top3Snapshot = computeTop3Snapshot(markets);
   const mood = computeMood(markets, global);
 
@@ -187,7 +188,7 @@ async function fetchFromCoinGecko() {
     // existing field
     converterPrices,
 
-    // new fields (safe to add)
+    // new fields
     mood,
     top3Snapshot,
   };
